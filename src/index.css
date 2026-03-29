@@ -1,0 +1,25 @@
+@import 'tailwindcss';
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff !important;
+  }
+  .print-root {
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    max-width: 100% !important;
+  }
+}
