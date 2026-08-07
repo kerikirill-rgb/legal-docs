@@ -1,0 +1,12 @@
+{
+  "name": "legal-docs",
+  "install": "npm ci",
+  "ports": [{ "name": "vite dev server", "port": 5173 }],
+  "terminals": [
+    {
+      "name": "dev",
+      "command": "npm run dev -- --host 0.0.0.0",
+      "description": "Vite dev server for the legal-docs React app (http://localhost:5173)."
+    }
+  ]
+}
