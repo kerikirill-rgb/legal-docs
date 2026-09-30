@@ -1,0 +1,16 @@
+{
+  "name": "legaldocs-reels",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Vertical 9:16 promo video for LegalDocs (Instagram Reels / Telegram), rendered with Remotion",
+  "scripts": {
+    "studio": "remotion studio src/index.js",
+    "render": "remotion render src/index.js LegalDocsReel out/legaldocs-reel.mp4 --codec=h264 --crf=18"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.531",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "remotion": "4.0.531"
+  }
+}
