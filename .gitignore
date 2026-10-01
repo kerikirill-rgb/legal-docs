@@ -27,3 +27,8 @@ dist-ssr
 *.exe
 legal-docs-backup-*.json
 *.docx
+
+# Doma bot
+doma/.env
+doma/.venv/
+doma/backups/
