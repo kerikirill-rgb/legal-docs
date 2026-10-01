@@ -1,0 +1,16 @@
+{
+  "name": "doma-stories",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Vertical 9:16 Telegram Stories promo for the Doma household chores bot, rendered with Remotion",
+  "scripts": {
+    "studio": "remotion studio src/index.js",
+    "render": "remotion render src/index.js DomaStory out/doma-story.mp4 --codec=h264 --crf=18"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.531",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "remotion": "4.0.531"
+  }
+}
