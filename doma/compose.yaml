@@ -1,0 +1,30 @@
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: doma
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-doma}
+      POSTGRES_DB: doma
+    volumes:
+      - doma_pgdata:/var/lib/postgresql/data
+    # Не публикуем порт наружу — только внутренняя сеть compose
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U doma -d doma"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  bot:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://doma:${POSTGRES_PASSWORD:-doma}@db:5432/doma
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  doma_pgdata:
