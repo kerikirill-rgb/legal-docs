@@ -2,7 +2,7 @@ import OpenAI from 'openai'
 import { z } from 'zod'
 
 const ActionSchema = z.object({
-  type: z.enum(['email_draft', 'task', 'send_commercial_offer', 'crm_note']),
+  type: z.enum(['email_draft', 'task', 'send_commercial_offer', 'crm_note', 'lead']),
   title: z.string().optional(),
   to: z.string().optional(),
   subject: z.string().optional(),
