@@ -23,7 +23,9 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web --port 8081",
+    "web:lan": "expo start --web --port 8081 --host lan",
+    "web:tunnel": "expo start --web --port 8081 --tunnel"
   },
   "private": true
 }

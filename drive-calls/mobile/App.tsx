@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -20,9 +21,10 @@ import { analyzeTranscript, executeActions } from './src/api'
 import { parseContactsCsv } from './src/csv'
 import type { AnalysisResult, Contact, SuggestedAction } from './src/types'
 import { useVoiceCommands } from './src/useVoiceCommands'
+import { COUNTDOWN_SEC, DEMO_CSV, DEMO_TRANSCRIPT } from './src/demo'
+import { API_URL } from './src/api'
 
 const STORAGE_KEY = 'drive-calls:v1'
-const COUNTDOWN_SEC = 10
 
 type Phase = 'idle' | 'incall' | 'wrapup' | 'countdown' | 'paused'
 
@@ -68,19 +70,17 @@ export default function App() {
     if (session.contacts.length) saveSession(session)
   }, [session])
 
-  const dial = useCallback(
-    async (contact: Contact) => {
-      const url = `tel:${contact.phone.replace(/\s/g, '')}`
+  const dial = useCallback(async (contact: Contact) => {
+    setSession((s) => ({ ...s, phase: 'incall' }))
+    if (Platform.OS === 'web') return
+    const url = `tel:${contact.phone.replace(/\s/g, '')}`
+    try {
       const ok = await Linking.canOpenURL(url)
-      if (!ok) {
-        Alert.alert('Звонок', 'На этом устройстве нельзя открыть tel: (нужен iPhone)')
-        return
-      }
-      setSession((s) => ({ ...s, phase: 'incall' }))
-      await Linking.openURL(url)
-    },
-    [],
-  )
+      if (ok) await Linking.openURL(url)
+    } catch {
+      /* симуляция на десктопе */
+    }
+  }, [])
 
   const startCall = useCallback(async () => {
     if (!current) return
@@ -142,6 +142,13 @@ export default function App() {
     return () => clearTimeout(t)
   }, [session.phase, secondsLeft, advanceAndDial])
 
+  const loadDemoList = useCallback(() => {
+    const contacts = parseContactsCsv(DEMO_CSV)
+    setSession({ contacts, index: 0, phase: 'idle' })
+    setTranscript('')
+    setAnalysis(null)
+  }, [])
+
   const importCsv = useCallback(async () => {
     const pick = await DocumentPicker.getDocumentAsync({
       type: ['text/csv', 'text/comma-separated-values', 'text/plain'],
@@ -191,8 +198,11 @@ export default function App() {
     if (!current || !analysis) return
     setBusyBitrix(true)
     try {
-      await executeActions(current, analysis.actions)
-      Alert.alert('Битрикс', 'Лид / задачи обновлены')
+      const out = await executeActions(current, analysis.actions)
+      Alert.alert(
+        'Битрикс',
+        out.demo ? 'Демо-режим: запрос принят, в CRM ничего не создано (нет webhook в API).' : 'Лид / задачи обновлены',
+      )
     } catch (e) {
       Alert.alert('Битрикс', e instanceof Error ? e.message : 'Ошибка')
     } finally {
@@ -213,6 +223,9 @@ export default function App() {
           <Text style={styles.inCallLabel}>Сейчас на линии</Text>
           <Text style={styles.inCallName}>{displayName(current)}</Text>
           {current.company ? <Text style={styles.inCallCompany}>{current.company}</Text> : null}
+          {Platform.OS === 'web' ? (
+            <Text style={styles.simHint}>Демо: звонок симулируется (на iPhone Safari будет реальный tel:)</Text>
+          ) : null}
           <Pressable
             style={styles.endCallBtn}
             onPress={() => setSession((s) => ({ ...s, phase: 'wrapup' }))}
@@ -240,7 +253,7 @@ export default function App() {
           <Text style={styles.nextName}>{displayName(nextContact)}</Text>
           {nextContact.company ? <Text style={styles.nextCompany}>{nextContact.company}</Text> : null}
           <Text style={styles.voiceHint}>Скажите «СТОП» или «ДАЛЬШЕ» · или кнопки ниже</Text>
-          <Pressable style={styles.stopBtn} onPress={pauseCountdown}>
+          <Pressable style={styles.stopBtn} onPress={pauseCountdown} testID="stop-btn">
             <Text style={styles.stopBtnText}>СТОП</Text>
           </Pressable>
           {session.phase === 'paused' ? (
@@ -264,9 +277,13 @@ export default function App() {
           <Text style={styles.kicker}>Drive Calls · iPhone</Text>
           <Text style={styles.title}>Обзвон</Text>
           <Text style={styles.hint}>
-            На линии — только ФИО и компания. После звонка — вставка из «Мой МТС», Битрикс, затем таймер 10 сек.
+            На линии — только ФИО и компания. После звонка — вставка из «Мой МТС», Битрикс, затем таймер {COUNTDOWN_SEC} сек.
           </Text>
+          <Text style={styles.devBanner}>API: {API_URL}</Text>
 
+          <Pressable style={styles.demoBtn} onPress={loadDemoList} testID="demo-list">
+            <Text style={styles.demoBtnText}>Демо-список (3 контакта)</Text>
+          </Pressable>
           <Pressable style={styles.secondaryBtn} onPress={importCsv}>
             <Text style={styles.secondaryBtnText}>Загрузить CSV</Text>
           </Pressable>
@@ -280,7 +297,7 @@ export default function App() {
               <Text style={styles.phone}>{current.phone}</Text>
 
               {session.phase === 'idle' && (
-                <Pressable style={styles.primaryBtn} onPress={startCall}>
+                <Pressable style={styles.primaryBtn} onPress={startCall} testID="call-btn">
                   <Text style={styles.primaryBtnText}>Позвонить</Text>
                 </Pressable>
               )}
@@ -290,6 +307,9 @@ export default function App() {
                   <Text style={styles.sectionTitle}>Расшифровка из «Мой МТС»</Text>
                   <Pressable style={styles.linkBtn} onPress={pasteFromClipboard}>
                     <Text style={styles.linkBtnText}>Вставить из буфера</Text>
+                  </Pressable>
+                  <Pressable style={styles.linkBtn} onPress={() => setTranscript(DEMO_TRANSCRIPT)} testID="demo-transcript">
+                    <Text style={styles.linkBtnText}>Подставить пример расшифровки</Text>
                   </Pressable>
                   <TextInput
                     style={styles.textArea}
@@ -446,4 +466,14 @@ const styles = StyleSheet.create({
   actionText: { flex: 1 },
   actionType: { color: '#a5b4fc', fontSize: 12, textTransform: 'uppercase', marginBottom: 2 },
   empty: { color: '#64748b', marginTop: 24, fontSize: 16 },
+  devBanner: { color: '#64748b', fontSize: 12, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined, marginBottom: 8 },
+  demoBtn: {
+    backgroundColor: '#4338ca',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  demoBtnText: { color: '#e0e7ff', fontSize: 16, fontWeight: '700' },
+  simHint: { color: '#64748b', fontSize: 14, marginTop: 24, textAlign: 'center', paddingHorizontal: 16 },
 })

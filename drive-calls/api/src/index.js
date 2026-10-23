@@ -43,6 +43,16 @@ const ExecuteBody = z.object({
 app.post('/execute', async (req, res) => {
   try {
     const body = ExecuteBody.parse(req.body)
+    if (!process.env.BITRIX_WEBHOOK_URL) {
+      const results = body.actions
+        .filter((a) => a.approved !== false)
+        .map((a) => ({
+          type: a.type,
+          demo: true,
+          message: 'BITRIX_WEBHOOK_URL не задан — в CRM ничего не создано',
+        }))
+      return res.json({ results, demo: true })
+    }
     const results = await applyActions(body.actions, body.contact)
     res.json({ results })
   } catch (e) {
@@ -51,6 +61,6 @@ app.post('/execute', async (req, res) => {
 })
 
 const port = Number(process.env.PORT || 8787)
-app.listen(port, () => {
-  console.log(`drive-calls API on http://localhost:${port}`)
+app.listen(port, '0.0.0.0', () => {
+  console.log(`drive-calls API on http://0.0.0.0:${port} (LAN: use your machine IP)`)
 })

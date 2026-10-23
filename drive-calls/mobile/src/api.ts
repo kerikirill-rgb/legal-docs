@@ -1,6 +1,6 @@
 import type { AnalysisResult, Contact, SuggestedAction } from './types'
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8787'
+export const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8787'
 
 export async function analyzeTranscript(contact: Contact, transcript: string): Promise<AnalysisResult> {
   const res = await fetch(`${API_URL}/analyze`, {
@@ -21,5 +21,5 @@ export async function executeActions(contact: Contact, actions: SuggestedAction[
   })
   const data = await res.json()
   if (!res.ok) throw new Error(data.error || 'Execute failed')
-  return data
+  return data as { results: unknown[]; demo?: boolean }
 }
